@@ -1,57 +1,115 @@
-#require 'byebug'
+# Factory class provides a way to store in the same objects other different
+# predefined objects also as methods.
+# Usage:
+#   Customer = Struct.new(:name, :address, :zip)
+#   => Customer
+#
+#   joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+#   => #<struct Customer name="Joe Smith", address="123 Maple, Anytown NC",
+#   zip=12345>
+#
+#   joe.name
+#   joe["name"]
+#   joe[:name]
+#   joe[0]
+#   => "Joe Smith"
 class Factory
-  def initialize(*args_undef, **args_def, &block)
-    args = {}                                 # Argument order
-    args_undef.each {|s| args.store(s, nil)}  # shouln't be changed
-    args.merge! args_def                      # here
+  def initialize *attributes, &block
+    raise ArgumentError, 'wrong number of arguments (0 for 1+)' if attributes.empty?
+    @_attributes = attributes.map(&:to_sym)
+    @_block = block
+  end
 
-    @_members_list = []
-    args.each do |name, default|
-      @_members_list << name
-      instance_variable_set "@#{name}", default
+  def new *values
+    raise ArgumentError, 'factory size differs' if values.size > @_attributes.size
+    (@_attributes.size - values.size).times { values << nil }
+    inst = Class.new
+    inst.instance_variable_set :@_attributes, @_attributes
+    inst.instance_variable_set :@_block, @_block
+    inst.extend AttributeCheck
 
-      self.class.send :define_method, "#{name}" do
-        instance_variable_get "@#{name}"
+    @_attributes.each_with_index do |attribute, index|
+      inst.instance_variable_set "@#{attribute}", values[index]
+
+      inst.class.send :define_method, "#{attribute}" do
+        instance_variable_get "@#{attribute}"
       end
-      self.class.send :define_method, "#{name}=" do |val|
-        instance_variable_set "@#{name}", val
+
+      inst.class.send :define_method, "#{attribute}=" do |value|
+        instance_variable_set "@#{attribute}", value
+      end
+
+      inst.class.send :define_method, '[]' do |attribute|
+        attribute = attribute_check attribute
+        instance_variable_get "@#{attribute}"
+      end
+
+      inst.class.send :define_method, '[]=' do |attribute, value|
+        attribute = attribute_check attribute
+        instance_variable_set "@#{attribute}", value
       end
     end
-
-    instance_eval &block if block
-  end
-
-  def [] attribute
-    attribute = "#{@_members_list[attribute]}" if attribute.is_a? Fixnum
-    send attribute.to_s
-  end
-
-  def []= attribute, value
-    attribute = "#{@_members_list[attribute]}=" if attribute.is_a? Fixnum
-    send attribute.to_s, value
+    inst.instance_eval(&@_block) unless @_block.nil?
+    inst
   end
 end
 
-1000.times do
-f = Factory.new( :a, :b, :c, d: 1, e: 2) {
-  def hello
-    'Hi, there'
+# AttributeCheck is used to extend dynamicaly created Factory instances with
+# some static methods
+module AttributeCheck
+  include Enumerable
+  def == other
+    val_attributes = other.instance_variable_get :@_attributes
+    return false if val_attributes - @_attributes != []
+    return false if @_attributes - val_attributes != []
+    return false if @_block != other.instance_variable_get(:@_block)
+
+    @_attributes.each do |v|
+      return false if instance_variable_get("@#{v}") != other.instance_variable_get("@#{v}")
+    end
+    true
   end
 
-  def sum
-    a + b
+  def each &block
+    @_attributes.each do |a|
+      block.call a, send(a)
+    end
   end
-}
+
+  alias_method eql? ==
+
+  private
+
+    # When val is String or Symbol
+    #   it checks if val presents in attribute's list and raise an error 
+    #   in abscence case
+    # When val is Fixnum
+    #   it checks if val is in valid range
+    #     raise an error if out of range
+    #     converts to attribute name otherwise
+    def attribute_check val
+      case val
+      when Fixnum
+        if val >= @_attributes.size
+          raise IndexError, "offset #{val} is to large for #{description}"
+        elsif val < (@_attributes.size * -1)
+          raise IndexError, "offset #{val} is to small for #{description}"
+        end
+
+        val = @_attributes.size + val if val < 0
+        val = @_attributes[val]
+      when Symbol, String
+        val = val.to_sym
+        unless @_attributes.include? val
+          raise NameError, "no attribute #{val} in factory"
+        end
+      else
+        raise TypeError
+      end
+      val
+    end
+
+    def description
+      "factory size #{@_attributes.size}"
+    end
 end
-# byebug
-#  puts f[:a]
-# puts f['a']
-# puts f[0]
-
-# f[0] = 1
-# f[:b] = 2
-# f['c'] = 3
-
-# puts f[0]
-# puts f['b']
-# puts f[:c]
