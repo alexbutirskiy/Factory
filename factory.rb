@@ -71,12 +71,15 @@ module AttributeCheck
   end
 
   def each &block
-    @_attributes.each do |a|
-      block.call a, send(a)
+    if block
+      @_attributes.each do |a|
+        block.call send(a)
+      end
     end
+    self
   end
 
-  alias_method eql? ==
+  alias_method :eql?, :==
 
   private
 

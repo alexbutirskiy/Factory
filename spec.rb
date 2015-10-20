@@ -100,7 +100,7 @@ describe Factory, 'class:' do
       it 'provides whole bunch of methods from Ennumerable' do
         f_inst.a = 1
         f_inst.b = 2
-        expect( f_inst.to_a ).to eq [[:a, 1], [:b, 2]]
+        expect( f_inst.to_a ).to eq [1, 2]
       end
     end
 
