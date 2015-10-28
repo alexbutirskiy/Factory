@@ -1,7 +1,8 @@
+require './factory_helper'
 # Factory class provides a way to store in the same objects other different
 # predefined objects also as methods.
 # Usage:
-#   Customer = Struct.new(:name, :address, :zip)
+#   Customer = Factory.new(:name, :address, :zip)
 #   => Customer
 #
 #   joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -14,105 +15,56 @@
 #   joe[0]
 #   => "Joe Smith"
 class Factory
-  def initialize *attributes, &block
+  def self.new *attributes, &block
     raise ArgumentError, 'wrong number of arguments (0 for 1+)' if attributes.empty?
-    @_attributes = attributes.map(&:to_sym)
-    @_block = block
-  end
+    attributes.map!(&:to_sym)
+    
+    Class.new do
+      include FactoryHelper
+      const_set :MEMBERS, attributes
+      const_set :BLOCK, block
 
-  def new *values
-    raise ArgumentError, 'factory size differs' if values.size > @_attributes.size
-    (@_attributes.size - values.size).times { values << nil }
-    inst = Class.new
-    inst.instance_variable_set :@_attributes, @_attributes
-    inst.instance_variable_set :@_block, @_block
-    inst.extend AttributeCheck
-
-    @_attributes.each_with_index do |attribute, index|
-      inst.instance_variable_set "@#{attribute}", values[index]
-
-      inst.class.send :define_method, "#{attribute}" do
-        instance_variable_get "@#{attribute}"
+      def initialize *values
+        raise ArgumentError, 'factory size differs' if values.size > members.size
+        values.each_with_index { |val, i| instance_variable_set "@#{members[i]}", val }
       end
 
-      inst.class.send :define_method, "#{attribute}=" do |value|
-        instance_variable_set "@#{attribute}", value
-      end
+      attributes.each do |attribute|
+        attr_accessor attribute
 
-      inst.class.send :define_method, '[]' do |attribute|
-        attribute = attribute_check attribute
-        instance_variable_get "@#{attribute}"
-      end
-
-      inst.class.send :define_method, '[]=' do |attribute, value|
-        attribute = attribute_check attribute
-        instance_variable_set "@#{attribute}", value
-      end
-    end
-    inst.instance_eval(&@_block) unless @_block.nil?
-    inst
-  end
-end
-
-# AttributeCheck is used to extend dynamicaly created Factory instances with
-# some static methods
-module AttributeCheck
-  include Enumerable
-  def == other
-    val_attributes = other.instance_variable_get :@_attributes
-    return false if val_attributes - @_attributes != []
-    return false if @_attributes - val_attributes != []
-    return false if @_block != other.instance_variable_get(:@_block)
-
-    @_attributes.each do |v|
-      return false if instance_variable_get("@#{v}") != other.instance_variable_get("@#{v}")
-    end
-    true
-  end
-
-  def each &block
-    if block
-      @_attributes.each do |a|
-        block.call send(a)
-      end
-    end
-    self
-  end
-
-  alias_method :eql?, :==
-
-  private
-
-    # When val is String or Symbol
-    #   it checks if val presents in attribute's list and raise an error 
-    #   in abscence case
-    # When val is Fixnum
-    #   it checks if val is in valid range
-    #     raise an error if out of range
-    #     converts to attribute name otherwise
-    def attribute_check val
-      case val
-      when Fixnum
-        if val >= @_attributes.size
-          raise IndexError, "offset #{val} is to large for #{description}"
-        elsif val < (@_attributes.size * -1)
-          raise IndexError, "offset #{val} is to small for #{description}"
+        define_method '[]' do |key|
+          instance_variable_get "@#{attribute_convert key}"
         end
 
-        val = @_attributes.size + val if val < 0
-        val = @_attributes[val]
-      when Symbol, String
-        val = val.to_sym
-        unless @_attributes.include? val
-          raise NameError, "no attribute #{val} in factory"
+        define_method '[]=' do |key, value|
+          instance_variable_set "@#{attribute_convert key}", value
         end
-      else
-        raise TypeError
       end
-      val
+
+      def == other
+        if self.class != other.class
+          return false if other.members.sort - members.sort != []
+          return false if self.class.const_get(:BLOCK) != other.class.const_get(:BLOCK)
+        end
+
+        members.each do |attribute|
+          return false if send(attribute) != other.send(attribute)
+        end
+        true
+      end
+
+      class_eval(&block) unless block.nil?
+
+      def self.members
+        const_get :MEMBERS
+      end
+
+      def memberss
+        #self.class.members
+      end
+
+      alias_method :eql?, :==
     end
 
-    def description
-      "factory size #{@_attributes.size}"
-    end
+  end
 end
