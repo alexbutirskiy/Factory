@@ -61,7 +61,7 @@ class Factory
           members.each { |a| block.call send(a) }
           self
         else
-          members.to_enum
+          to_enum(:each)
         end
       end
 
@@ -70,7 +70,7 @@ class Factory
           members.each { |a| block.call a, send(a) }
           self
         else
-          members.to_enum
+          to_enum(:each_pair)
         end
       end
 
