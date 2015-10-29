@@ -17,13 +17,25 @@ require './factory_helper'
 class Factory
   def self.new *attributes, &block
     raise ArgumentError, 'wrong number of arguments (0 for 1+)' if attributes.empty?
+
+    # If the first argument is a String we treat it as new Factory class name
+    class_name = attributes[0].is_a?(String) ? attributes.shift : nil
     attributes.map!(&:to_sym)
     
-    Class.new do
+    # New class is inhereted from self (Factory), so superclass call will
+    # return "Factory". Unfortunately this inheritance brake down "new" method
+    # so we have to restore it inside class definition
+    new_class = Class.new(self) do
       include Enumerable
       include FactoryHelper
       const_set :MEMBERS, attributes
       const_set :BLOCK, block
+
+      def self.new *values
+        inst = allocate
+        inst.send :initialize, *values
+        inst
+      end
 
       def initialize *values
         raise ArgumentError, 'factory size differs' if values.size > members.size
@@ -100,6 +112,8 @@ class Factory
       alias_method :eql?, :==
       alias_method :size, :length
     end
+
+    class_name ? const_set(class_name, new_class) : new_class
 
   end
 end
