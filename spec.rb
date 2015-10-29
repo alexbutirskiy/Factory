@@ -117,6 +117,14 @@ describe 'New data type:' do
       expect(f_inst.to_h).to eq ({ a: 1, b:2 })
     end
 
+    it 'has "values" method' do
+      expect(f_inst.values).to eq ([1, 2])
+    end    
+
+    it 'has "values_at" method' do
+      expect(f_inst.values_at(1, 0)).to eq ([2, 1])
+    end    
+
     it 'provides whole bunch of methods from Ennumerable' do
       f_inst.a = 1
       f_inst.b = 2

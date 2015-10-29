@@ -92,6 +92,11 @@ class Factory
         self.class.members
       end
 
+      def values_at start, size
+        to_a.values_at start, size
+      end
+
+      alias_method :values, :to_a
       alias_method :eql?, :==
       alias_method :size, :length
     end
