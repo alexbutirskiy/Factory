@@ -2,24 +2,29 @@ require_relative './factory.rb'
 
 describe Factory, 'class:' do
 
-  it 'creates new factory subclass with some attributes'  do
-    expect { Factory.new :a}.to_not raise_error
+  it 'creates new data type with some attributes'  do
+    expect { Factory.new :a }.to_not raise_error
   end
 
-  it 'creates new factory subclass with some attributes and block'  do
-    expect { Factory.new :a, 'b' do;end }.to_not raise_error
+  it 'creates new data type with some attributes and block'  do
+    expect { Factory.new :a, 'b' do; end }.to_not raise_error
   end
 
-  it 'raises ArgumentError if no attributes sended' do
+  it 'raises ArgumentError if no attributes provided' do
     expect { Factory.new }.to raise_exception ArgumentError
+  end
+
+  it 'has a "members" method' do
+    expect(Factory.new(:a, :b).members).to eq [:a, :b]
   end
 
 end
 
-describe 'New factory type:' do
-  let(:factory) do 
+describe 'New data type:' do
+  let(:new_type) do 
     Factory.new :a, 'b'
   end
+
   let(:factory_block) do 
     Factory.new :a, 'b' do
       def hi
@@ -33,8 +38,8 @@ describe 'New factory type:' do
   end
 
   context 'when "new" method calls' do
-    it 'creates factory instance with full set of attributes' do
-      f_inst = factory.new
+    it 'creates new_type instance with full set of attributes' do
+      f_inst = new_type.new
 
       expect { f_inst.a     }.to_not raise_error
       expect { f_inst.b     }.to_not raise_error
@@ -43,18 +48,18 @@ describe 'New factory type:' do
     end
 
     it "sets attributes to provided values" do
-      f_inst = factory.new 1, '2'
+      f_inst = new_type.new 1, '2'
 
       expect(f_inst.a).to eq 1
       expect(f_inst.b).to eq '2'
     end
 
     it 'raises ArgumentError if number of parametres is more then attributes count' do
-      expect { factory.new 1, 2, 3 }.to raise_exception ArgumentError
+      expect { new_type.new 1, 2, 3 }.to raise_exception ArgumentError
     end
   end
 
-  let (:f_inst) { factory.new }
+  let (:f_inst) { new_type.new 1, 2 }
 
   context 'if new instance is created successfully' do
 
@@ -80,30 +85,45 @@ describe 'New factory type:' do
     end
 
     it 'provides == and eql? methods' do
-      f1 = factory.new 1, 2
+      f1 = new_type.new 1, 2
       factory_reverse = Factory.new :b, :a
       f2 = factory_reverse.new 2, 1
       f3 = factory_block.new 1, 2
       f4 = factory_block.new 1, 2
       expect(f1 == f1).to eq true
-      expect(f1 == factory.new(1, 2)).to eq true
-      expect(f1 == factory.new(1, 1)).to eq false
-      expect(f1 == factory.new(2, 2)).to eq false
+      expect(f1 == new_type.new(1, 2)).to eq true
+      expect(f1 == new_type.new(1, 1)).to eq false
+      expect(f1 == new_type.new(2, 2)).to eq false
       expect(f1 == f3).to eq false
       expect(f3 == f4).to eq true
       expect(f3.eql? f4).to eq true
       expect(f1.eql? f4).to eq false
     end
 
-    it 'provides each method' do
-      expect { f_inst.each {} }.to_not raise_error
+    it 'provides "each" method' do
+      expect(f_inst.each).to be_a_kind_of(Enumerable)
+    end
+
+    it 'has "each_pair" method' do
+      expect(f_inst.each_pair).to be_a_kind_of(Enumerable)
+    end
+
+    it 'has "length" and "size" method' do
+      expect(f_inst.length).to eq 2
+      expect(f_inst.size).to eq 2
+    end
+
+    it 'has "to_h" method' do
+      expect(f_inst.to_h).to eq ({ a: 1, b:2 })
     end
 
     it 'provides whole bunch of methods from Ennumerable' do
       f_inst.a = 1
       f_inst.b = 2
-      expect( f_inst.to_a ).to eq [1, 2]
+      expect(f_inst.to_a).to eq [1, 2]
+      expect(f_inst.inject(&:+)).to eq 3
     end
+
   end
 
   context 'in case of wrong index' do
@@ -124,7 +144,7 @@ describe 'New factory type:' do
 
   context 'when block provided' do
     let (:f_inst) { factory_block.new 1, 2 }
-    it 'factory lets to call method from block' do
+    it 'New_type lets to call method from block' do
       expect(f_inst.hi).to eq 'Hello'
       expect(f_inst.sum).to eq 3
     end

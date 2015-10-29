@@ -20,6 +20,7 @@ class Factory
     attributes.map!(&:to_sym)
     
     Class.new do
+      include Enumerable
       include FactoryHelper
       const_set :MEMBERS, attributes
       const_set :BLOCK, block
@@ -55,15 +56,44 @@ class Factory
 
       class_eval(&block) unless block.nil?
 
+      def each &block
+        if block
+          members.each { |a| block.call send(a) }
+          self
+        else
+          members.to_enum
+        end
+      end
+
+      def each_pair &block
+        if block
+          members.each { |a| block.call a, send(a) }
+          self
+        else
+          members.to_enum
+        end
+      end
+
+      def to_h
+        h = {}
+        each_pair {|a, b| h.merge!([[a, b]].to_h)}
+        h
+      end
+
+      def length
+        members.size
+      end
+
       def self.members
         const_get :MEMBERS
       end
 
-      def memberss
-        #self.class.members
+      def members
+        self.class.members
       end
 
       alias_method :eql?, :==
+      alias_method :size, :length
     end
 
   end

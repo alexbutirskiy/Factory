@@ -1,15 +1,5 @@
 # Some helper method for Factory class
 module FactoryHelper
-  include Enumerable
-
-  def each &block
-    if block
-      members.each { |a| block.call send(a) }
-      self
-    else
-      members.to_enum
-    end
-  end
 
   def to_s
     str = "\#<factory #{self.class.name}"
