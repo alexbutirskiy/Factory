@@ -2,7 +2,8 @@
 
 Factory class provides a way to store in the same objects other different predefined objects also as methods.
 Usage:
-```
+```ruby
+  require 'factory'
   Customer = Factory.new(:name, :address, :zip)
   => Customer
 
