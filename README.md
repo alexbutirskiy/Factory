@@ -1,4 +1,5 @@
 ## Factory project solution for RubyGarage Courses
+[![Build Status](https://travis-ci.org/alexbutirskiy/factory.svg?branch=master)](https://travis-ci.org/alexbutirskiy/factory)
 
 Factory class provides a way to store in the same objects other different predefined objects also as methods.
 Usage:
