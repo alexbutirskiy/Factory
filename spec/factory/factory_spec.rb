@@ -60,6 +60,11 @@ describe 'New data type:' do
       expect(f_inst.b).to eq '2'
     end
 
+    it "has to_s method" do
+      f_inst = new_type.new 1, '2'
+      expect(f_inst.to_s).to eq '#<factory  a=1 b="2">'
+    end
+
     it 'raises ArgumentError if number of parametres is more then attributes count' do
       expect { new_type.new 1, 2, 3 }.to raise_exception ArgumentError
     end
