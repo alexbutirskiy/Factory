@@ -2,8 +2,13 @@ require_relative './factory.rb'
 
 describe Factory, 'class:' do
 
-  it 'creates new data type with some attributes'  do
-    expect { Factory.new :a }.to_not raise_error
+  it 'creates new explicit data type' do
+    expect { Factory.new 'New_type', :a}.to_not raise_error
+    expect { Factory::New_type.new}.to_not raise_error
+  end
+
+  it 'creates new anonymous data type'  do
+    expect { Factory.new :a}.to_not raise_error
   end
 
   it 'creates new data type with some attributes and block'  do

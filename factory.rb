@@ -66,8 +66,6 @@ class Factory
         true
       end
 
-      class_eval(&block) unless block.nil?
-
       def each &block
         if block
           members.each { |a| block.call send(a) }
@@ -111,6 +109,8 @@ class Factory
       alias_method :values, :to_a
       alias_method :eql?, :==
       alias_method :size, :length
+
+      class_eval(&block) unless block.nil?
     end
 
     class_name ? const_set(class_name, new_class) : new_class
