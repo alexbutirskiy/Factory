@@ -1,4 +1,4 @@
-require './factory_helper'
+require_relative 'factory_helper'
 # Factory class provides a way to store in the same objects other different
 # predefined objects also as methods.
 # Usage:
@@ -14,8 +14,8 @@ require './factory_helper'
 #   joe[:name]
 #   joe[0]
 #   => "Joe Smith"
-class Factory
-  def self.new *attributes, &block
+module FactoryModule
+  def new *attributes, &block
     raise ArgumentError, 'wrong number of arguments (0 for 1+)' if attributes.empty?
 
     # If the first argument is a String we treat it as new Factory class name

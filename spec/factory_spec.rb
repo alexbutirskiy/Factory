@@ -1,4 +1,4 @@
-require_relative './factory.rb'
+require './lib/factory'
 
 describe Factory, 'class:' do
 
